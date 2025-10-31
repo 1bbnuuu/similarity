@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Skripsi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Back Button -->
+        <button onclick="window.history.back()" class="mb-4 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-gray-700 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Kembali
+        </button>
+
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- Header -->
+            <div class="bg-indigo-600 text-white p-6">
+                <h1 id="detailTitle" class="text-2xl font-bold mb-3">Memuat...</h1>
+                <div class="flex flex-wrap gap-4 text-sm">
+                    <span id="detailPenulis" class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                        Penulis
+                    </span>
+                    <span id="detailJurusan" class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                        </svg>
+                        Jurusan
+                    </span>
+                    <span id="detailTahun" class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                        </svg>
+                        Tahun
+                    </span>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6 space-y-6">
+                <!-- Abstract -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-2">Abstract</h2>
+                    <p id="detailAbstract" class="text-gray-700 text-justify leading-relaxed">
+                        Loading...
+                    </p>
+                </div>
+
+                <!-- Keywords -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-2">Keywords</h2>
+                    <div id="detailKeywords" class="flex flex-wrap gap-2">
+                        <!-- Keywords akan ditampilkan di sini -->
+                    </div>
+                </div>
+
+                <!-- PDF Viewer -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-2">Dokumen</h2>
+                    <div id="pdfContainer" class="border border-gray-300 rounded-lg overflow-hidden bg-gray-100">
+                        <iframe id="pdfViewer" class="w-full h-[600px]" frameborder="0"></iframe>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        <a id="pdfLink" href="#" target="_blank" class="text-indigo-600 hover:underline">
+                            Buka di tab baru →
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk mengambil parameter URL
+        function getUrlParameter(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // Fungsi untuk mengkonversi Google Drive link ke embed URL
+        function convertDriveLink(url) {
+            if (!url) return '';
+            const match = url.match(/\/d\/([^\/]+)/);
+            if (match) {
+                return `https://drive.google.com/file/d/${match[1]}/preview`;
+            }
+            return url;
+        }
+
+        // Load data dari Google Sheets
+        const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkbyjy0mm-DEBQ4dTqrB1MHz2aPQv5Gz-GISsuvf1_yQwA4D6xI_AxUZj55xBNg8qoUtbfc_vfHB5-/pub?output=csv';
+
+        async function loadThesisDetail() {
+            const judulParam = getUrlParameter('judul');
+            
+            if (!judulParam) {
+                document.getElementById('detailTitle').textContent = 'Data tidak ditemukan';
+                document.getElementById('detailAbstract').textContent = 'Parameter judul tidak ditemukan di URL';
+                return;
+            }
+
+            try {
+                const response = await fetch(SPREADSHEET_URL);
+                if (!response.ok) {
+                    throw new Error('Gagal mengambil data dari spreadsheet');
+                }
+                
+                const text = await response.text();
+                
+                Papa.parse(text, {
+                    header: false,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        const rows = results.data;
+                        
+                        // Cari data yang sesuai dengan judul
+                        const data = rows.slice(1).find(row => 
+                            row[0] && row[0].trim() === decodeURIComponent(judulParam).trim()
+                        );
+
+                        if (data && data.length >= 4) {
+                            // Update informasi
+                            document.getElementById('detailTitle').textContent = data[0] || 'N/A';
+                            
+                            document.getElementById('detailPenulis').innerHTML = `
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+                                ${data[3] || 'N/A'}
+                            `;
+                            
+                            document.getElementById('detailJurusan').innerHTML = `
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                                </svg>
+                                ${data[2] || 'N/A'}
+                            `;
+                            
+                            document.getElementById('detailTahun').innerHTML = `
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                </svg>
+                                ${data[1] || 'N/A'}
+                            `;
+                            
+                            // Abstract (kolom index 4)
+                            document.getElementById('detailAbstract').textContent = data[4] || 'Abstract tidak tersedia';
+                            
+                            // Keywords (kolom index 5)
+                            const keywords = data[5] ? data[5].split(',').map(k => k.trim()).filter(k => k) : [];
+                            document.getElementById('detailKeywords').innerHTML = keywords.length > 0 
+                                ? keywords.map(k => `<span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">${k}</span>`).join('')
+                                : '<span class="text-gray-500 text-sm">Tidak ada keywords</span>';
+                            
+                            // PDF Viewer (kolom index 6)
+                            if (data[6] && data[6].trim()) {
+                                const embedUrl = convertDriveLink(data[6]);
+                                document.getElementById('pdfViewer').src = embedUrl;
+                                document.getElementById('pdfLink').href = data[6];
+                            } else {
+                                document.getElementById('pdfContainer').innerHTML = '<p class="text-gray-500 text-center py-8">Dokumen tidak tersedia</p>';
+                            }
+                        } else {
+                            document.getElementById('detailTitle').textContent = 'Data tidak ditemukan';
+                            document.getElementById('detailAbstract').textContent = 'Data dengan judul tersebut tidak ditemukan dalam database';
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Error parsing CSV:', error);
+                        document.getElementById('detailTitle').textContent = 'Error memuat data';
+                        document.getElementById('detailAbstract').textContent = 'Terjadi kesalahan saat parsing data CSV';
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('detailTitle').textContent = 'Error memuat data';
+                document.getElementById('detailAbstract').textContent = 'Terjadi kesalahan: ' + error.message;
+            }
+        }
+
+        // Load data saat halaman dimuat
+        window.addEventListener('DOMContentLoaded', loadThesisDetail);
+    </script>
+</body>
+</html>

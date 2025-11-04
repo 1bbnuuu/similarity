@@ -44,28 +44,12 @@
             </div>
 
             <!-- Content -->
-            <div class="p-6 space-y-6">
-                <!-- Abstract -->
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-800 mb-2">Abstract</h2>
-                    <p id="detailAbstract" class="text-gray-700 text-justify leading-relaxed">
-                        Loading...
-                    </p>
-                </div>
-
-                <!-- Keywords -->
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-800 mb-2">Keywords</h2>
-                    <div id="detailKeywords" class="flex flex-wrap gap-2">
-                        <!-- Keywords akan ditampilkan di sini -->
-                    </div>
-                </div>
-
+            <div class="p-6">
                 <!-- PDF Viewer -->
                 <div>
                     <h2 class="text-lg font-semibold text-gray-800 mb-2">Dokumen</h2>
                     <div id="pdfContainer" class="border border-gray-300 rounded-lg overflow-hidden bg-gray-100">
-                        <iframe id="pdfViewer" class="w-full h-[600px]" frameborder="0"></iframe>
+                        <iframe id="pdfViewer" class="w-full h-[400px] md:h-[900px]" frameborder="0"></iframe>
                     </div>
                     <p class="text-sm text-gray-500 mt-2">
                         <a id="pdfLink" href="#" target="_blank" class="text-indigo-600 hover:underline">
@@ -94,7 +78,6 @@
             return url;
         }
 
-        // Load data dari Google Sheets
         const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkbyjy0mm-DEBQ4dTqrB1MHz2aPQv5Gz-GISsuvf1_yQwA4D6xI_AxUZj55xBNg8qoUtbfc_vfHB5-/pub?output=csv';
 
         async function loadThesisDetail() {
@@ -102,7 +85,6 @@
             
             if (!judulParam) {
                 document.getElementById('detailTitle').textContent = 'Data tidak ditemukan';
-                document.getElementById('detailAbstract').textContent = 'Parameter judul tidak ditemukan di URL';
                 return;
             }
 
@@ -150,15 +132,6 @@
                                 ${data[1] || 'N/A'}
                             `;
                             
-                            // Abstract (kolom index 4)
-                            document.getElementById('detailAbstract').textContent = data[4] || 'Abstract tidak tersedia';
-                            
-                            // Keywords (kolom index 5)
-                            const keywords = data[5] ? data[5].split(',').map(k => k.trim()).filter(k => k) : [];
-                            document.getElementById('detailKeywords').innerHTML = keywords.length > 0 
-                                ? keywords.map(k => `<span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">${k}</span>`).join('')
-                                : '<span class="text-gray-500 text-sm">Tidak ada keywords</span>';
-                            
                             // PDF Viewer (kolom index 6)
                             if (data[6] && data[6].trim()) {
                                 const embedUrl = convertDriveLink(data[6]);
@@ -169,19 +142,16 @@
                             }
                         } else {
                             document.getElementById('detailTitle').textContent = 'Data tidak ditemukan';
-                            document.getElementById('detailAbstract').textContent = 'Data dengan judul tersebut tidak ditemukan dalam database';
                         }
                     },
                     error: function(error) {
                         console.error('Error parsing CSV:', error);
                         document.getElementById('detailTitle').textContent = 'Error memuat data';
-                        document.getElementById('detailAbstract').textContent = 'Terjadi kesalahan saat parsing data CSV';
                     }
                 });
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('detailTitle').textContent = 'Error memuat data';
-                document.getElementById('detailAbstract').textContent = 'Terjadi kesalahan: ' + error.message;
             }
         }
 

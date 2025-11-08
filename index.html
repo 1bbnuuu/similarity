@@ -10,18 +10,16 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
     <div class="max-w-5xl mx-auto">
         <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Deteksi Kemiripan Judul Skripsi</h1>
-            <p class="text-gray-600 mb-6">Menggunakan Algoritma Cosine Similarity + TF-IDF</p>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Deteksi Kemiripan Judul Skripsi Prodi TI STMIK Palangkaraya</h1>
+            <p class="text-gray-600 mb-6"></p>
             
-            <!-- Status Loading Data -->
             <div id="loadStatus" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p class="text-blue-700 text-sm">Memuat database</p>
             </div>
 
-            <!-- Input Judul -->
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Judul yang Ingin Diperiksa
+                    Judul
                 </label>
                 <textarea
                     id="inputTitle"
@@ -31,276 +29,23 @@
                 ></textarea>
             </div>
 
-            <!-- Error Message -->
             <div id="errorMsg" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg hidden">
                 <p class="text-red-700 text-sm"></p>
             </div>
 
-            <!-- Button Cek Kemiripan -->
             <button
                 id="checkBtn"
-                class="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-            >
+                class="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium">
                 🔍 Cek Kemiripan
             </button>
         </div>
 
-        <!-- Results -->
         <div id="resultsContainer" class="bg-white rounded-lg shadow-lg p-8 hidden">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">Hasil Pencocokan</h2>
             <div id="resultsList" class="space-y-4"></div>
         </div>
     </div>
 
-    <script>
-        let thesisData = [];
-        const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkbyjy0mm-DEBQ4dTqrB1MHz2aPQv5Gz-GISsuvf1_yQwA4D6xI_AxUZj55xBNg8qoUtbfc_vfHB5-/pub?output=csv';
-
-        // Load data saat halaman dimuat
-        window.addEventListener('DOMContentLoaded', fetchSpreadsheetData);
-
-        async function fetchSpreadsheetData() {
-            const loadStatus = document.getElementById('loadStatus');
-            const checkBtn = document.getElementById('checkBtn');
-            
-            try {
-                const response = await fetch(SPREADSHEET_URL);
-                if (!response.ok) {
-                    throw new Error('Gagal mengambil data dari spreadsheet');
-                }
-                
-                const text = await response.text();
-                
-                // Gunakan PapaParse untuk parsing CSV yang lebih akurat
-                Papa.parse(text, {
-                    header: false,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        const rows = results.data;
-                        
-                        // Skip header row (index 0)
-                        thesisData = rows.slice(1)
-                            .filter(row => row.length >= 4 && row[0])
-                            .map(row => ({
-                                judul: row[0] || '',
-                                tahun: row[1] || '',
-                                jurusan: row[2] || '',
-                                penulis: row[3] || '',
-                                abstract: row[4] || '',
-                                keywords: row[5] || '',
-                                pdfLink: row[6] || ''
-                            }));
-                        
-                        if (thesisData.length === 0) {
-                            throw new Error('Tidak ada data yang ditemukan');
-                        }
-                        
-                        loadStatus.innerHTML = `<p class="text-green-700 text-sm">${thesisData.length} data berhasil dimuat</p>`;
-                        loadStatus.className = 'mb-6 p-4 bg-green-50 border border-green-200 rounded-lg';
-                        checkBtn.disabled = false;
-                    },
-                    error: function(error) {
-                        throw new Error('Error parsing CSV: ' + error.message);
-                    }
-                });
-                
-            } catch (err) {
-                loadStatus.innerHTML = `<p class="text-red-700 text-sm">✗ ${err.message}</p>`;
-                loadStatus.className = 'mb-6 p-4 bg-red-50 border border-red-200 rounded-lg';
-                checkBtn.disabled = true;
-            }
-        }
-
-        // Preprocessing teks
-        function preprocessText(text) {
-            return text.toLowerCase()
-                .replace(/[^\w\s]/g, ' ')
-                .split(/\s+/)
-                .filter(word => word.length > 0);
-        }
-
-        // Hitung TF (Term Frequency)
-        function calculateTF(words) {
-            const tf = {};
-            const totalWords = words.length;
-            
-            words.forEach(word => {
-                tf[word] = (tf[word] || 0) + 1;
-            });
-            
-            Object.keys(tf).forEach(word => {
-                tf[word] = tf[word] / totalWords;
-            });
-            
-            return tf;
-        }
-
-        // Hitung IDF (Inverse Document Frequency)
-        function calculateIDF(allDocuments) {
-            const idf = {};
-            const totalDocs = allDocuments.length;
-            
-            const docCount = {};
-            allDocuments.forEach(doc => {
-                const uniqueWords = [...new Set(doc)];
-                uniqueWords.forEach(word => {
-                    docCount[word] = (docCount[word] || 0) + 1;
-                });
-            });
-            
-            Object.keys(docCount).forEach(word => {
-                idf[word] = Math.log(totalDocs / docCount[word]);
-            });
-            
-            return idf;
-        }
-
-        // Hitung TF-IDF
-        function calculateTFIDF(tf, idf) {
-            const tfidf = {};
-            Object.keys(tf).forEach(word => {
-                tfidf[word] = tf[word] * (idf[word] || 0);
-            });
-            return tfidf;
-        }
-
-        // Hitung Cosine Similarity
-        function cosineSimilarity(vec1, vec2) {
-            const allKeys = new Set([...Object.keys(vec1), ...Object.keys(vec2)]);
-            let dotProduct = 0;
-            let mag1 = 0;
-            let mag2 = 0;
-            
-            allKeys.forEach(key => {
-                const val1 = vec1[key] || 0;
-                const val2 = vec2[key] || 0;
-                dotProduct += val1 * val2;
-                mag1 += val1 * val1;
-                mag2 += val2 * val2;
-            });
-            
-            if (mag1 === 0 || mag2 === 0) return 0;
-            return dotProduct / (Math.sqrt(mag1) * Math.sqrt(mag2));
-        }
-
-        // Cari kata-kata yang sama
-        function findMatchingWords(inputWords, comparedWords) {
-            const inputSet = new Set(inputWords);
-            const comparedSet = new Set(comparedWords);
-            return [...inputSet].filter(word => comparedSet.has(word));
-        }
-
-        // Hitung kemiripan
-        function calculateSimilarity() {
-            const inputTitle = document.getElementById('inputTitle').value;
-            const errorMsg = document.getElementById('errorMsg');
-            const resultsContainer = document.getElementById('resultsContainer');
-            const resultsList = document.getElementById('resultsList');
-            
-            if (!inputTitle.trim()) {
-                errorMsg.querySelector('p').textContent = 'Masukkan judul yang ingin diperiksa';
-                errorMsg.classList.remove('hidden');
-                resultsContainer.classList.add('hidden');
-                return;
-            }
-
-            if (thesisData.length === 0) {
-                errorMsg.querySelector('p').textContent = 'Data belum berhasil dimuat';
-                errorMsg.classList.remove('hidden');
-                resultsContainer.classList.add('hidden');
-                return;
-            }
-
-            errorMsg.classList.add('hidden');
-            
-            // Preprocessing
-            const inputWords = preprocessText(inputTitle);
-            const allDocuments = [inputWords, ...thesisData.map(t => preprocessText(t.judul))];
-            
-            // Hitung IDF untuk semua dokumen
-            const idf = calculateIDF(allDocuments);
-            
-            // Hitung TF-IDF untuk input
-            const inputTF = calculateTF(inputWords);
-            const inputTFIDF = calculateTFIDF(inputTF, idf);
-            
-            // Hitung similarity dengan setiap judul
-            const similarities = thesisData.map(thesis => {
-                const thesisWords = preprocessText(thesis.judul);
-                const thesisTF = calculateTF(thesisWords);
-                const thesisTFIDF = calculateTFIDF(thesisTF, idf);
-                
-                const similarity = cosineSimilarity(inputTFIDF, thesisTFIDF);
-                const matchingWords = findMatchingWords(inputWords, thesisWords);
-                
-                return {
-                    ...thesis,
-                    similarity: similarity * 100,
-                    matchingWords: matchingWords
-                };
-            });
-            
-            // Sort berdasarkan similarity tertinggi
-            similarities.sort((a, b) => b.similarity - a.similarity);
-            
-            // Tampilkan top 10 hasil
-            const top10 = similarities.slice(0, 10);
-            
-            resultsList.innerHTML = top10.map((result, index) => {
-                const colorClass = result.similarity >= 70 ? 'text-red-600' :
-                                   result.similarity >= 40 ? 'text-yellow-600' : 'text-green-600';
-                
-                const detailUrl = `detail.html?judul=${encodeURIComponent(result.judul)}`;
-                
-                return `
-                <a href="${detailUrl}" class="block group">
-                    <div class="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="flex-1">
-                                    <h3 class="font-semibold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors cursor-pointer">
-                                        ${result.judul}
-                                    </h3>
-                                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-                                        <span>Penulis: ${result.penulis}</span>
-                                        <span>Jurusan: ${result.jurusan}</span>
-                                        <span>Tahun: ${result.tahun}</span>
-                                    </div>
-                            </div>
-                            <div class="ml-4 text-right">
-                                <div class="text-2xl font-bold ${colorClass}">
-                                    ${result.similarity.toFixed(1)}%
-                                </div>
-                                <div class="text-xs text-gray-500">Kemiripan</div>
-                            </div>
-                        </div>
-                        ${result.matchingWords.length > 0 ? `
-                            <div class="mt-3 pt-3 border-t border-gray-100">
-                                <p class="text-sm text-gray-600 mb-2">Kata yang sama:</p>
-                                <div class="flex flex-wrap gap-2">
-                                    ${result.matchingWords.map(word => 
-                                        `<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${word}</span>`
-                                        ).join('')}
-                                    </div>
-                                </div>
-                                ` : ''}
-                            </div>
-                </a>
-                `;
-            }).join('');
-            
-            resultsContainer.classList.remove('hidden');
-            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        // Event listener untuk button
-        document.getElementById('checkBtn').addEventListener('click', calculateSimilarity);
-        
-        // Enter key untuk submit
-        document.getElementById('inputTitle').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                calculateSimilarity();
-            }
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

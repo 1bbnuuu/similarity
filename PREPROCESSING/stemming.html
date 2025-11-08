@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stemming Bahasa Indonesia</title>
+  <script src="https://cdn.jsdelivr.net/npm/sastrawijs@1.1.0/dist/sastrawijs.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50 flex flex-col items-center p-8">
+  <div id="statusDiv" class="hidden mb-4 px-4 py-2 rounded text-sm"></div>
+
+  <textarea 
+    id="inputText"
+    placeholder="isi judul" 
+    class="w-full max-w-xl h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800"
+  ></textarea>
+
+  <button 
+    id="btnProcess"
+    onclick="doStemming()" 
+    class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition"
+  >
+    Stemming
+  </button>
+
+  <div id="output" class="hidden mt-8 w-full max-w-xl bg-white shadow-md rounded-lg p-5">
+    <div class="text-lg font-semibold text-gray-700 mb-2">Hasil Stemming:</div>
+    <pre id="stemmedText"></pre>
+    <div id="detailText" class="mt-4 flex flex-wrap gap-2"></div>
+  </div>
+
+  <script>
+    let stemmer, tokenizer;
+    const statusDiv = document.getElementById("statusDiv");
+    const btnProcess = document.getElementById("btnProcess");
+
+    window.addEventListener("load", function() {
+      try {
+        if (typeof sastrawijs !== "undefined") {
+          stemmer = new sastrawijs.Stemmer();
+          tokenizer = new sastrawijs.Tokenizer();
+          showStatus("online", "ready");
+        } else {
+          throw new Error("Library off");
+        }
+      } catch (error) {
+        showStatus("❌ Error: " + error.message, "error");
+        btnProcess.disabled = true;
+        console.error(error);
+      }
+    });
+
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = 
+        "mb-4 px-4 py-2 rounded text-sm font-medium " +
+        (type === "ready" 
+          ? "bg-green-100 text-green-800 border border-green-300" 
+          : "bg-red-100 text-red-800 border border-red-300");
+      statusDiv.style.display = "block";
+    }
+
+    function doStemming() {
+      const input = document.getElementById("inputText").value.trim();
+      if (!input) return alert("Masukkan teks terlebih dahulu!");
+
+      try {
+        const tokens = tokenizer.tokenize(input.toLowerCase());
+        const results = [];
+        const details = [];
+
+        tokens.forEach(word => {
+            const stemmed = stemmer.stem(word);
+            details.push({stemmed: stemmed });
+        });
+
+        document.getElementById("output").classList.remove("hidden");
+        document.getElementById("stemmedText").textContent = results.join(" ");
+
+        document.getElementById("detailText").innerHTML = details.map(d => `
+          <div class="px-3 py-1 bg-blue-50 border border-blue-200 rounded text-sm">
+            <span class="font-semibold text-blue-700">${d.stemmed}</span>
+          </div>
+        `).join("");
+
+      } catch (error) {
+        alert("Terjadi kesalahan: " + error.message);
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

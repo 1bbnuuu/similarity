@@ -1,4 +1,4 @@
-const judul = "Simulator Pemrosesan Citra Menggunakan Metode Konvolusi Untuk Gambar Yang Memiliki Noise Pada Desain Spanduk";
+const judul = "Penerapan TF-IDF dan Cosine Similarity pada Deteksi Kemiripan Judul Tugas Akhir di STMIK Palangkaraya";
 
 async function getStopwords() {
   const gid = "1222777187";
@@ -34,7 +34,7 @@ async function main() {
 
 
 // RAW
-const rawjudul = "sistem pakar diagnosa penyakit pada anjing jenis herder dengan menggunakan metode forward chaining";
+const rawjudul = "Penerapan TF-IDF dan Cosine Similarity pada Deteksi Kemiripan Judul Tugas Akhir di STMIK Palangkaraya";
 
 function tokenizing(teks) {
     const tokens = teks
